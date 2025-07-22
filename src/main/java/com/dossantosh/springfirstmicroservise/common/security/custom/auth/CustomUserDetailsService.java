@@ -1,0 +1,28 @@
+package com.dossantosh.springfirstmicroservise.common.security.custom.auth;
+
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.dossantosh.springfirstmicroservise.common.security.custom.auth.models.UserAuthProjection;
+import com.dossantosh.springfirstmicroservise.services.UserService;
+
+import lombok.RequiredArgsConstructor;
+
+@RequiredArgsConstructor
+@Service
+public class CustomUserDetailsService implements UserDetailsService {
+
+    private final UserService userService;
+
+    @Transactional(readOnly = true) // <-- evitar LazyInitializationException
+    @Override
+    public UserDetails loadUserByUsername(String username) {
+
+        UserAuthProjection userAuthProjection = userService.findUserAuthByUsername(username);
+
+        return userService.mapToUserAuth(userAuthProjection);
+    }
+}
