@@ -1,6 +1,5 @@
 package com.dossantosh.springfirstmicroservise.services;
 
-
 import java.util.List;
 import java.util.ArrayList;
 
@@ -21,11 +20,12 @@ import com.dossantosh.springfirstmicroservise.common.global.page.KeysetPage;
 import com.dossantosh.springfirstmicroservise.common.security.custom.auth.UserAuth;
 import com.dossantosh.springfirstmicroservise.common.security.custom.auth.models.UserAuthProjection;
 import com.dossantosh.springfirstmicroservise.common.security.custom.auth.models.UserContextService;
-import com.dossantosh.springfirstmicroservise.dtos.UserDTO;
 import com.dossantosh.springfirstmicroservise.models.Modules;
 import com.dossantosh.springfirstmicroservise.models.Roles;
 import com.dossantosh.springfirstmicroservise.models.Submodules;
 import com.dossantosh.springfirstmicroservise.models.User;
+import com.dossantosh.springfirstmicroservise.projections.dtos.FullUserDTO;
+import com.dossantosh.springfirstmicroservise.projections.dtos.UserDTO;
 import com.dossantosh.springfirstmicroservise.repositories.UserRepository;
 
 import jakarta.persistence.EntityNotFoundException;
@@ -58,11 +58,13 @@ public class UserService {
     }
 
     public UserAuthProjection findUserAuthByUsername(String username) {
-        return userRepository.findUserAuthByUsername(username).orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
+        return userRepository.findUserAuthByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username));
     }
 
     public User findFullUserById(Long id) {
-        return userRepository.findFullUserById(id).orElseThrow(() -> new EntityNotFoundException("Usuario con ID " + id + " no encontrado"));
+        return userRepository.findFullUserById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario con ID " + id + " no encontrado"));
     }
 
     public User findByUsername(String username) {
@@ -77,33 +79,44 @@ public class UserService {
 
     public KeysetPage<UserDTO> findUsersKeyset(Long id, String username, String email, Long lastId, int limit,
             Direction direction) {
-        // Añadimos un extra para saber si hay más resultados
-        List<UserDTO> users = userRepository.findByFiltersKeysetWithDirection(id, username, email, lastId, limit + 1,
-                direction.name());
+        // Pedimos limit + 1 para detectar si hay más elementos
+        List<UserDTO> users = userRepository.findUsersKeyset(id, username, email, lastId, limit + 1, direction.name());
 
-        boolean hasNext = users.size() > limit;
-        if (hasNext) {
-            users.remove(users.size() - 1); // Quitar extra
+        boolean hasMore = users.size() > limit;
+        if (hasMore) {
+            users.remove(users.size() - 1); // eliminamos el extra
         }
 
-        // Si es PREVIOUS, los resultados vienen invertidos (DESC), invertimos para
-        // mostrar ASC en la UI
+        // Invertimos la lista si vamos hacia atrás, para mostrarla en orden ascendente
         if (direction == Direction.PREVIOUS) {
             Collections.reverse(users);
         }
 
-        Long newLastId = null;
+        Long newNextId = null;
+        Long newPreviousId = null;
+        boolean hasNext = false;
+        boolean hasPrevious = false;
+
         if (!users.isEmpty()) {
+            newNextId = users.get(users.size() - 1).getId(); // último visible → para ir hacia adelante
+            newPreviousId = users.get(0).getId(); // primero visible → para ir hacia atrás
             if (direction == Direction.NEXT) {
-                newLastId = users.get(users.size() - 1).getId();
+                hasNext = hasMore;
+                hasPrevious = lastId != null;
             } else if (direction == Direction.PREVIOUS) {
-                newLastId = users.get(0).getId();
+                hasNext = lastId != null; // solo hay "siguiente" si venimos del medio
+                hasPrevious = hasMore; // solo hay "anterior" si el extra vino en la consulta
             }
         }
 
-        Long newPreviousId = users.isEmpty() ? null : users.get(0).getId();
+        KeysetPage<UserDTO> page = new KeysetPage<>();
+        page.setContent(users);
+        page.setNextId(newNextId);
+        page.setPreviousId(newPreviousId);
+        page.setHasNext(hasNext);
+        page.setHasPrevious(hasPrevious);
 
-        return new KeysetPage<>(users, newLastId, newPreviousId, hasNext);
+        return page;
     }
 
     public boolean existsById(Long id) {
@@ -314,54 +327,6 @@ public class UserService {
         return map;
     }
 
-    @Transactional(readOnly = true)
-    public UserAuth userToUserAuth(User user) {
-
-        if (user.getId() == null) {
-            return null;
-        }
-
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            return null;
-        }
-
-        if (user.getEnabled() == null) {
-            return null;
-        }
-
-        if (user.getPassword() == null || user.getPassword().isEmpty()) {
-            return null;
-        }
-
-        if (user.getRoles() == null || user.getModules() == null || user.getSubmodules() == null) {
-            return null;
-        }
-
-        if (user.getRoles().isEmpty() || user.getModules().isEmpty() || user.getSubmodules().isEmpty()) {
-            return null;
-        }
-
-        UserAuth userAuth = new UserAuth();
-        userAuth.setId(user.getId());
-        userAuth.setUsername(user.getUsername());
-        userAuth.setPassword(user.getPassword());
-        userAuth.setEnabled(user.getEnabled());
-
-        LinkedHashSet<String> hashRoles = new LinkedHashSet<>(user.getRoles().stream()
-                .map(Roles::getName).toList());
-        userAuth.setRoles(hashRoles);
-
-        LinkedHashSet<Long> hashModules = new LinkedHashSet<>(user.getModules().stream()
-                .map(Modules::getId).toList());
-        userAuth.setModules(hashModules);
-
-        LinkedHashSet<Long> hashSubmodules = new LinkedHashSet<>(user.getSubmodules().stream()
-                .map(Submodules::getId).toList());
-        userAuth.setSubmodules(hashSubmodules);
-
-        return userAuth;
-    }
-
     public UserAuth mapToUserAuth(UserAuthProjection projection) {
 
         if (projection == null) {
@@ -384,5 +349,25 @@ public class UserService {
         userAuth.setSubmodules(hashSubmodules);
 
         return userAuth;
+    }
+
+    public FullUserDTO mapToUserDTO(User user) {
+
+        if (user == null) {
+            return null;
+        }
+
+        FullUserDTO fullUserDTO = new FullUserDTO();
+        fullUserDTO.setId(user.getId());
+        fullUserDTO.setUsername(user.getUsername());
+        fullUserDTO.setEnabled(user.getEnabled());
+
+        fullUserDTO.setRoles(new LinkedHashSet<>(user.getRoles()));
+
+        fullUserDTO.setModules(new LinkedHashSet<>(user.getModules()));
+
+        fullUserDTO.setSubmodules(new LinkedHashSet<>(user.getSubmodules()));
+
+        return fullUserDTO;
     }
 }

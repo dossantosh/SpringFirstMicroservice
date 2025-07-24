@@ -12,8 +12,8 @@ import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
 import com.dossantosh.springfirstmicroservise.common.security.custom.auth.models.UserAuthProjection;
-import com.dossantosh.springfirstmicroservise.dtos.UserDTO;
 import com.dossantosh.springfirstmicroservise.models.User;
+import com.dossantosh.springfirstmicroservise.projections.dtos.UserDTO;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
@@ -52,14 +52,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
                     FROM submodules s
                     JOIN users_submodules us ON s.id_submodule = us.id_submodule
                     WHERE us.id_user = u.id_user
-                ) AS submodules,
-                p.user_id AS preferences_userId,
-                p.email_notifications AS preferences_emailNotifications,
-                p.sms_notifications AS preferences_smsNotifications,
-                p.tema AS preferences_tema,
-                p.idioma AS preferences_idioma
+                ) AS submodules
             FROM users u
-            LEFT JOIN preferences p ON p.user_id = u.id_user
             WHERE u.username = :username
                                 """, nativeQuery = true)
     Optional<UserAuthProjection> findUserAuthByUsername(String username);
@@ -90,7 +84,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
                   CASE WHEN :direction = 'PREVIOUS' THEN u.id_user END DESC
                 LIMIT :limit
             """, nativeQuery = true)
-    List<UserDTO> findByFiltersKeysetWithDirection(
+    List<UserDTO> findUsersKeyset(
             @Param("id") Long id,
             @Param("username") String username,
             @Param("email") String email,
@@ -98,6 +92,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("limit") int limit,
             @Param("direction") String direction);
 
-    @EntityGraph(attributePaths = { "roles", "modules", "submodules"})
+    @EntityGraph(attributePaths = { "roles", "modules", "submodules" })
     Optional<User> findFullUserById(Long id);
 }

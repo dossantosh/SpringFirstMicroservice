@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 
-
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class }, scanBasePackages = {
 		"com.dossantosh.springfirstmicroservise.common",
 		"com.dossantosh.springfirstmicroservise.controllers",
@@ -19,7 +18,6 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 		"com.dossantosh.springfirstmicroservise.repositories",
 		"com.dossantosh.springfirstmicroservise.services"
 })
-
 
 @EnableMethodSecurity
 @EnableTransactionManagement

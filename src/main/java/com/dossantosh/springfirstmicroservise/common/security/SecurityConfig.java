@@ -5,12 +5,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
+
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
@@ -20,7 +22,8 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
-import com.dossantosh.springfirstmicroservise.common.angular.RestAuthenticationEntryPoint;
+import com.dossantosh.springfirstmicroservise.common.global.errors.custom.RestAccessDeniedHandler;
+import com.dossantosh.springfirstmicroservise.common.global.errors.custom.RestAuthenticationEntryPoint;
 import com.dossantosh.springfirstmicroservise.common.security.custom.auth.CustomUserDetailsService;
 import com.dossantosh.springfirstmicroservise.common.security.jwt.JwtAuthFilter;
 
@@ -30,8 +33,9 @@ public class SecurityConfig {
 
         private final JwtAuthFilter jwtAuthFilter;
         private final CustomUserDetailsService customUserDetailsService;
-        private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
 
+        private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+        private final RestAccessDeniedHandler restAccessDeniedHandler;
 
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -40,18 +44,19 @@ public class SecurityConfig {
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                                .requestMatchers("/api/auth/**").permitAll()
+                                                .requestMatchers("/api/**").permitAll()
                                                 .anyRequest().authenticated())
                                 .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // SIN sesiones
+                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .securityContext(securityContext -> securityContext.requireExplicitSave(false))
                                 .userDetailsService(customUserDetailsService)
                                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                                .exceptionHandling(ex -> ex.authenticationEntryPoint(restAuthenticationEntryPoint)) // 401
-                                                                                                                    // sin
-                                                                                                                    // redirect
+                                .exceptionHandling(ex -> ex
+                                                .authenticationEntryPoint(restAuthenticationEntryPoint) // 401 unauthorized
+                                                .accessDeniedHandler(restAccessDeniedHandler) // 403 handler
+                                )
                                 .formLogin(form -> form.disable()) // deshabilitar login form
-                                .httpBasic(httpBasic -> httpBasic.disable());
+                                .httpBasic(AbstractHttpConfigurer::disable);
 
                 return http.build();
         }

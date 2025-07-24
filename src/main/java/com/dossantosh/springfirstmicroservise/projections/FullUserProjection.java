@@ -1,4 +1,4 @@
-package com.dossantosh.springfirstmicroservise.dtos;
+package com.dossantosh.springfirstmicroservise.projections;
 import java.util.List;
 
 public interface FullUserProjection {
