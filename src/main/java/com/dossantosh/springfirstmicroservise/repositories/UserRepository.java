@@ -5,38 +5,87 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 
-import com.dossantosh.springfirstmicroservise.common.security.custom.auth.models.UserAuthProjection;
+import com.dossantosh.springfirstmicroservise.common.security.custom.auth.UserAuthProjection;
 import com.dossantosh.springfirstmicroservise.models.User;
-import com.dossantosh.springfirstmicroservise.projections.dtos.UserDTO;
+import com.dossantosh.springfirstmicroservise.projections.FullUserDTO;
+import com.dossantosh.springfirstmicroservise.projections.UserDTO;
 
+/**
+ * Repository interface for managing {@link User} entities.
+ * 
+ * Provides methods for retrieving users by username, email, and ID,
+ * checking existence, and retrieving detailed authentication and user data
+ * with custom queries and keyset pagination.
+ */
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
 
+    /**
+     * Finds a user by their exact username.
+     *
+     * @param username the username to search for
+     * @return an Optional containing the found User, or empty if not found
+     */
     Optional<User> findByUsername(String username);
 
+    /**
+     * Finds a user by their exact email address.
+     *
+     * @param email the email to search for
+     * @return an Optional containing the found User, or empty if not found
+     */
     Optional<User> findByEmail(String email);
 
+    /**
+     * Checks if a user exists by the given ID.
+     *
+     * @param id the user ID to check
+     * @return true if a user with the ID exists, false otherwise
+     */
     boolean existsById(@NonNull Long id);
 
+    /**
+     * Checks if a user exists with the given username.
+     *
+     * @param username the username to check
+     * @return true if a user with the username exists, false otherwise
+     */
     boolean existsByUsername(String username);
 
+    /**
+     * Checks if a user exists with the given email address.
+     *
+     * @param email the email to check
+     * @return true if a user with the email exists, false otherwise
+     */
     boolean existsByEmail(String email);
 
-    // Log in
+    /**
+     * Retrieves authentication-related information for a user by username,
+     * including roles, modules, and submodules.
+     *
+     * Uses a native SQL query to aggregate user permissions and details required
+     * for authentication.
+     *
+     * @param username the username to search for
+     * @return an Optional containing a {@link UserAuthProjection} with auth info,
+     *         or empty if user not found
+     */
     @Query(value = """
             SELECT
                 u.id_user AS id,
                 u.username AS username,
+                u.email AS email,
                 u.password AS password,
                 u.enabled AS enabled,
                 (
-                    SELECT array_agg(r.name)
+                    SELECT array_agg(r.id_role)
                     FROM roles r
                     JOIN users_roles ur ON r.id_role = ur.id_role
                     WHERE ur.id_user = u.id_user
@@ -58,18 +107,28 @@ public interface UserRepository extends JpaRepository<User, Long> {
                                 """, nativeQuery = true)
     Optional<UserAuthProjection> findUserAuthByUsername(String username);
 
-    // View
+    /**
+     * Returns a paginated list of users matching optional filters, using keyset
+     * pagination.
+     *
+     * Supports filtering by ID, username prefix, email prefix, pagination cursor
+     * (lastId),
+     * limit, and direction (NEXT or PREVIOUS).
+     *
+     * @param id        optional exact user ID to filter
+     * @param username  optional username prefix (case-insensitive)
+     * @param email     optional email prefix (case-insensitive)
+     * @param lastId    the last seen user ID for pagination cursor
+     * @param limit     max number of users to return
+     * @param direction pagination direction ("NEXT" or "PREVIOUS")
+     * @return a list of {@link FullUserDTO} matching the filters and pagination
+     */
     @Query(value = """
                 SELECT u.id_user AS id,
                        u.username AS username,
                        u.email AS email,
                        u.enabled AS enabled,
-                       EXISTS (
-                           SELECT 1
-                           FROM users_roles ur
-                           WHERE ur.id_user = u.id_user
-                             AND ur.id_role = 2
-                       ) AS isAdmin
+                       u.is_admin AS isAdmin
                 FROM users u
                 WHERE (:id IS NULL OR u.id_user = :id)
                   AND (:username IS NULL OR LOWER(u.username) LIKE CONCAT(:username, '%'))
@@ -92,6 +151,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
             @Param("limit") int limit,
             @Param("direction") String direction);
 
+    /**
+     * Finds a user by ID including all associated roles, modules, and submodules,
+     * using an {@link EntityGraph} to optimize fetching.
+     *
+     * @param id the ID of the user
+     * @return an Optional containing the full {@link User} entity with
+     *         associations,
+     *         or empty if not found
+     */
     @EntityGraph(attributePaths = { "roles", "modules", "submodules" })
     Optional<User> findFullUserById(Long id);
 }

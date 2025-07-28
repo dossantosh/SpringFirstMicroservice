@@ -13,8 +13,8 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @SpringBootApplication(exclude = { SecurityAutoConfiguration.class }, scanBasePackages = {
 		"com.dossantosh.springfirstmicroservise.common",
 		"com.dossantosh.springfirstmicroservise.controllers",
-		"com.dossantosh.springfirstmicroservise.dtos",
 		"com.dossantosh.springfirstmicroservise.models",
+		"com.dossantosh.springfirstmicroservise.projections",
 		"com.dossantosh.springfirstmicroservise.repositories",
 		"com.dossantosh.springfirstmicroservise.services"
 })

@@ -52,6 +52,9 @@ public class User implements Serializable {
     @Column(length = 100)
     private String password;
 
+    @Column(name = "is_admin")
+    private Boolean isAdmin;
+
     @BatchSize(size = 10)
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "id_user", referencedColumnName = "id_user"), inverseJoinColumns = @JoinColumn(name = "id_role", referencedColumnName = "id_role"))

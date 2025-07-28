@@ -9,7 +9,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.dossantosh.springfirstmicroservise.common.security.custom.auth.CustomUserDetailsService;
+import com.dossantosh.springfirstmicroservise.common.security.custom.auth.bus.CustomUserDetailsService;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -17,6 +17,10 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
+/**
+ * Filter that intercepts HTTP requests to validate JWT tokens and set
+ * authentication in the security context.
+ */
 @RequiredArgsConstructor
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -25,17 +29,30 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final CustomUserDetailsService userDetailsService;
 
+    /**
+     * Filters incoming requests to:
+     * - Allow OPTIONS requests without authentication.
+     * - Extract JWT token from the Authorization header.
+     * - Validate the token and set the authenticated user in the SecurityContext.
+     *
+     * @param request the incoming HttpServletRequest
+     * @param response the outgoing HttpServletResponse
+     * @param filterChain the filter chain
+     * @throws ServletException if servlet errors occur
+     * @throws IOException if I/O errors occur
+     */
     @Override
     protected void doFilterInternal(HttpServletRequest request,
-            HttpServletResponse response,
-            FilterChain filterChain)
+                                    HttpServletResponse response,
+                                    FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Permitir solicitudes OPTIONS sin autenticación
+        // Allow OPTIONS requests without authentication
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
             return;
         }
+
         String authHeader = request.getHeader("Authorization");
         String token = null;
         String username = null;
@@ -45,6 +62,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             try {
                 username = jwtUtil.extractUsername(token);
             } catch (Exception e) {
+                // Invalid token or extraction error, skip setting authentication
                 return;
             }
         }

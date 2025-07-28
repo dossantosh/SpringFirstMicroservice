@@ -24,64 +24,98 @@ import java.util.List;
 
 import com.dossantosh.springfirstmicroservise.common.global.errors.custom.RestAccessDeniedHandler;
 import com.dossantosh.springfirstmicroservise.common.global.errors.custom.RestAuthenticationEntryPoint;
-import com.dossantosh.springfirstmicroservise.common.security.custom.auth.CustomUserDetailsService;
+import com.dossantosh.springfirstmicroservise.common.security.custom.auth.bus.CustomUserDetailsService;
 import com.dossantosh.springfirstmicroservise.common.security.jwt.JwtAuthFilter;
 
+/**
+ * Configuration class for Spring Security.
+ * 
+ * Defines security filter chain, CORS configuration, password encoding,
+ * and authentication manager beans.
+ */
 @RequiredArgsConstructor
 @Configuration
 public class SecurityConfig {
 
-        private final JwtAuthFilter jwtAuthFilter;
-        private final CustomUserDetailsService customUserDetailsService;
+    private final JwtAuthFilter jwtAuthFilter;
+    private final CustomUserDetailsService customUserDetailsService;
 
-        private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
-        private final RestAccessDeniedHandler restAccessDeniedHandler;
+    private final RestAuthenticationEntryPoint restAuthenticationEntryPoint;
+    private final RestAccessDeniedHandler restAccessDeniedHandler;
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-                http
-                                .csrf(csrf -> csrf.disable())
-                                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                                .authorizeHttpRequests(auth -> auth
-                                                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                                                .requestMatchers("/api/**").permitAll()
-                                                .anyRequest().authenticated())
-                                .sessionManagement(session -> session
-                                                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                                .securityContext(securityContext -> securityContext.requireExplicitSave(false))
-                                .userDetailsService(customUserDetailsService)
-                                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                                .exceptionHandling(ex -> ex
-                                                .authenticationEntryPoint(restAuthenticationEntryPoint) // 401 unauthorized
-                                                .accessDeniedHandler(restAccessDeniedHandler) // 403 handler
-                                )
-                                .formLogin(form -> form.disable()) // deshabilitar login form
-                                .httpBasic(AbstractHttpConfigurer::disable);
+    /**
+     * Configures the security filter chain.
+     * Disables CSRF, enables CORS, configures request authorization,
+     * disables session creation (stateless), sets JWT filter,
+     * and sets custom handlers for unauthorized and access denied errors.
+     * 
+     * @param http HttpSecurity object
+     * @return configured SecurityFilterChain
+     * @throws Exception if configuration fails
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers("/api/**").permitAll()
+                .anyRequest().authenticated())
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .securityContext(securityContext -> securityContext.requireExplicitSave(false))
+            .userDetailsService(customUserDetailsService)
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint(restAuthenticationEntryPoint)   // Handles 401 Unauthorized
+                .accessDeniedHandler(restAccessDeniedHandler)             // Handles 403 Forbidden
+            )
+            .formLogin(form -> form.disable())  // Disable default form login
+            .httpBasic(AbstractHttpConfigurer::disable); // Disable HTTP Basic auth
 
-                return http.build();
-        }
+        return http.build();
+    }
 
-        @Bean
-        public CorsConfigurationSource corsConfigurationSource() {
-                CorsConfiguration configuration = new CorsConfiguration();
-                configuration.setAllowedOrigins(List.of("http://localhost:4200"));
-                configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-                configuration.setAllowedHeaders(List.of("*"));
-                configuration.setAllowCredentials(false);
-                configuration.setMaxAge(3600L);
+    /**
+     * Defines the CORS configuration source for handling cross-origin requests.
+     * Allows requests from http://localhost:4200 with common HTTP methods.
+     * 
+     * @return CorsConfigurationSource bean
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowedOrigins(List.of("http://localhost:4200"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L);
 
-                UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-                source.registerCorsConfiguration("/**", configuration);
-                return source;
-        }
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 
-        @Bean
-        public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-                return config.getAuthenticationManager();
-        }
+    /**
+     * Exposes AuthenticationManager bean from AuthenticationConfiguration.
+     * 
+     * @param config AuthenticationConfiguration injected by Spring
+     * @return AuthenticationManager bean
+     * @throws Exception if retrieval fails
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
+    }
 
-        @Bean
-        public PasswordEncoder passwordEncoder() {
-                return new BCryptPasswordEncoder();
-        }
+    /**
+     * Defines the PasswordEncoder bean using BCrypt hashing algorithm.
+     * 
+     * @return PasswordEncoder instance
+     */
+    @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
 }
