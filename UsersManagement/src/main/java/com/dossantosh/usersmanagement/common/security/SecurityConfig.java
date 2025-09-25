@@ -56,30 +56,30 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/**").permitAll()
-                .anyRequest().authenticated())
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .securityContext(securityContext -> securityContext.requireExplicitSave(false))
-            .userDetailsService(customUserDetailsService)
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint(restAuthenticationEntryPoint)   // Handles 401 Unauthorized
-                .accessDeniedHandler(restAccessDeniedHandler)             // Handles 403 Forbidden
-            )
-            .formLogin(form -> form.disable())  // Disable default form login
-            .httpBasic(AbstractHttpConfigurer::disable); // Disable HTTP Basic auth
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/**").permitAll()
+                        .anyRequest().authenticated())
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .securityContext(securityContext -> securityContext.requireExplicitSave(false))
+                .userDetailsService(customUserDetailsService)
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint) // Handles 401 Unauthorized
+                        .accessDeniedHandler(restAccessDeniedHandler) // Handles 403 Forbidden
+                )
+                .formLogin(form -> form.disable()) // Disable default form login
+                .httpBasic(AbstractHttpConfigurer::disable); // Disable HTTP Basic auth
 
         return http.build();
     }
 
     /**
      * Defines the CORS configuration source for handling cross-origin requests.
-     * Allows requests from http://localhost:4200 with common HTTP methods.
+     * Allows requests from common HTTP methods.
      * 
      * @return CorsConfigurationSource bean
      */
