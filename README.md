@@ -12,7 +12,7 @@
 
 ## 📌 Project Overview
 
-Back end of a web microservice application for user management and a perfume catalog, built with Spring Boot, Angular and PostgreSQL. It will support, through Kafka and Keybcloak Gateway, security, session management and auditing across all microservices.
+Back end of a web microservice application for user management and a perfume catalog, built with Spring Boot, Angular and PostgreSQL. It will support, through Redis and Keybcloak Gateway, security, session management and auditing across all microservices.
 
 Designed as a foundation for enterprise-grade web applications it ensures real-time data consistency and concurrency to prevent reader-writer conflicts.
 
