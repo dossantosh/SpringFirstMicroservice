@@ -420,30 +420,30 @@ public class UserService {
     }
 
     /**
-     * Maps a User entity to a UserDTO data transfer object.
+     * Maps a User entity to a FullUserDTO data transfer object.
      * 
      * @param user User entity.
-     * @return UserDTO or null if user is null.
+     * @return FullUserDTO or null if user is null.
      */
-    public FullUserDTO mapToUserDTO(User user) {
+    public FullUserDTO mapToFullUserDTO(User user) {
 
         if (user == null) {
             return null;
         }
 
-        FullUserDTO userDTO = new FullUserDTO();
-        userDTO.setId(user.getId());
-        userDTO.setUsername(user.getUsername());
-        userDTO.setEmail(user.getEmail());
-        userDTO.setEnabled(user.getEnabled());
-        userDTO.setIsAdmin(user.getIsAdmin());
+        FullUserDTO fullUserDTO = new FullUserDTO();
+        fullUserDTO.setId(user.getId());
+        fullUserDTO.setUsername(user.getUsername());
+        fullUserDTO.setEmail(user.getEmail());
+        fullUserDTO.setEnabled(user.getEnabled());
+        fullUserDTO.setIsAdmin(user.getIsAdmin());
 
-        userDTO.setRoles(new LinkedHashSet<>(user.getRoles()));
+        fullUserDTO.setRoles(new LinkedHashSet<>(user.getRoles()));
 
-        userDTO.setModules(new LinkedHashSet<>(user.getModules()));
+        fullUserDTO.setModules(new LinkedHashSet<>(user.getModules()));
 
-        userDTO.setSubmodules(new LinkedHashSet<>(user.getSubmodules()));
+        fullUserDTO.setSubmodules(new LinkedHashSet<>(user.getSubmodules()));
 
-        return userDTO;
+        return fullUserDTO;
     }
 }

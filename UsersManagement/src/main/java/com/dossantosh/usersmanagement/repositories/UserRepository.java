@@ -13,7 +13,7 @@ import org.springframework.stereotype.Repository;
 
 import com.dossantosh.usersmanagement.common.security.custom.auth.UserAuthProjection;
 import com.dossantosh.usersmanagement.models.User;
-import com.dossantosh.usersmanagement.projections.FullUserDTO;
+
 import com.dossantosh.usersmanagement.projections.UserDTO;
 
 /**
@@ -121,7 +121,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @param lastId    the last seen user ID for pagination cursor
      * @param limit     max number of users to return
      * @param direction pagination direction ("NEXT" or "PREVIOUS")
-     * @return a list of {@link FullUserDTO} matching the filters and pagination
+     * @return a list of {@link UserDTO} matching the filters and pagination
      */
     @Query(value = """
                 SELECT u.id_user AS id,

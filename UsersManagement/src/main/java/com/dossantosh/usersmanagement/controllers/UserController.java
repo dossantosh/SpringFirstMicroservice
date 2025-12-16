@@ -87,7 +87,7 @@ public class UserController {
     @GetMapping("/{id}")
     public ResponseEntity<FullUserDTO> getUserDetails(@PathVariable Long id) {
         User user = userService.findFullUserById(id);
-        FullUserDTO dto = userService.mapToUserDTO(user);
+        FullUserDTO dto = userService.mapToFullUserDTO(user);
         return ResponseEntity.ok(dto);
     }
 }

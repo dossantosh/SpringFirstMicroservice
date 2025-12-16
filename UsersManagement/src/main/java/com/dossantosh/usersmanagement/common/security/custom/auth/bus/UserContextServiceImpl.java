@@ -76,15 +76,7 @@ public final class UserContextServiceImpl implements UserContextService {
                 .map(UserAuth::getIsAdmin)
                 .orElse(Boolean.FALSE);
     }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public UserAuth getCurrentUserAuth() {
-        return getUserAuth().orElse(null);
-    }
-
+    
     /**
      * Helper method to retrieve the {@link UserAuth} object from
      * the Spring Security context.
